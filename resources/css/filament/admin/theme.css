@@ -1,0 +1,17 @@
+@import "../../../../vendor/filament/filament/resources/css/theme.css";
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+.fi-ta-ctn {
+    @apply rounded-sm;
+}
+.fi-section {
+    @apply rounded-sm;
+}
+.fi-sidebar-item-btn {
+    @apply rounded-sm;
+}
+.fi-input-wrp {
+    @apply rounded-sm;
+}
