@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
-use Filament\Forms\Components\DateTimePicker;
+use App\Models\Role;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -15,6 +17,7 @@ class UserForm
     {
         return $schema
             ->components([
+                // ── Section 1: Informasi Pribadi ──────────────────────────
                 Section::make('Informasi Pribadi')
                     ->description('Detail informasi profil pengguna')
                     ->collapsible()
@@ -37,6 +40,7 @@ class UserForm
                             ->columnSpanFull(),
                     ]),
 
+                // ── Section 2: Kredensial ─────────────────────────────────
                 Section::make('Kredensial Pengguna')
                     ->description('Informasi akun dan verifikasi pengguna')
                     ->collapsible()
@@ -51,9 +55,22 @@ class UserForm
                                     ->maxLength(255)
                                     ->unique(ignoreRecord: true),
 
-                                DateTimePicker::make('email_verified_at')
-                                    ->label('Terverifikasi Pada')
-                                    ->nullable(),
+                                Toggle::make('is_email_verified')
+                                    ->label('Email Terverifikasi')
+                                    ->helperText(
+                                        fn ($record) => $record?->email_verified_at
+                                            ? 'Terverifikasi pada: '.$record->email_verified_at->translatedFormat('d F Y, H:i')
+                                            : 'Email belum terverifikasi.'
+                                    )
+                                    ->default(
+                                        fn ($record) => filled($record?->email_verified_at)
+                                    )
+                                    ->live()
+                                    ->dehydrated(false)
+                                    ->onIcon('heroicon-m-check-badge')
+                                    ->offIcon('heroicon-m-x-circle')
+                                    ->onColor('success')
+                                    ->offColor('danger'),
                             ]),
 
                         Grid::make(2)
@@ -82,6 +99,44 @@ class UserForm
                                     ->autocomplete('new-password'),
                             ]),
                     ]),
+
+                // ── Section 3: Hak Akses ──────────────────────────────────
+                Section::make('Hak Akses')
+                    ->description('Tentukan role pengguna. Permission akan mengikuti role yang dipilih.')
+                    ->icon('heroicon-o-shield-check')
+                    ->collapsible()
+                    ->schema([
+                        Select::make('roles')
+                            ->label('Role')
+                            ->multiple()
+                            ->relationship('roles', 'name')
+                            ->preload()
+                            ->searchable()
+                            ->placeholder('Pilih role...')
+                            ->helperText('User dapat memiliki lebih dari satu role.')
+                            ->columnSpanFull()
+                            // Tampilkan badge warna per role
+                            ->getOptionLabelFromRecordUsing(
+                                fn (Role $record) => $record->name
+                            )
+                            // Cegah menghapus role super-admin dari user lain
+                            // jika user yang login bukan super-admin
+                            ->disableOptionWhen(function (string $value): bool {
+                                $role = Role::find($value);
+
+                                if (! $role) {
+                                    return false;
+                                }
+
+                                // Hanya super-admin yang bisa assign/remove role super-admin
+                                if ($role->name === 'super-admin') {
+                                    return ! auth()->user()?->hasRole('super-admin');
+                                }
+
+                                return false;
+                            }),
+                    ]),
+
             ]);
 
     }

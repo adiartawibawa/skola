@@ -26,7 +26,7 @@ class UserResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Sistem';
+    protected static string|UnitEnum|null $navigationGroup = 'Master Data';
 
     protected static ?string $navigationLabel = 'Pengguna';
 
@@ -73,6 +73,7 @@ class UserResource extends Resource
     {
         return [
             'Email' => $record->email,
+            'Role' => $record->getRoleNames()->implode(', ') ?: '—',
         ];
     }
 

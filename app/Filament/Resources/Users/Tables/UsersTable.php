@@ -7,8 +7,10 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 
@@ -40,6 +42,17 @@ class UsersTable
                     ->copyMessage('Email disalin!')
                     ->icon('heroicon-m-envelope'),
 
+                TextColumn::make('roles.name')
+                    ->label('Role')
+                    ->badge()
+                    ->separator(',')
+                    ->color(fn (string $state): string => match ($state) {
+                        'super-admin' => 'danger',
+                        'admin' => 'warning',
+                        default => 'primary',
+                    })
+                    ->placeholder('—'),
+
                 TextColumn::make('email_verified_at')
                     ->label('Status Verifikasi')
                     ->sortable()
@@ -64,9 +77,18 @@ class UsersTable
                     ->dateTime('d M Y, H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
+                SelectFilter::make('roles')
+                    ->label('Role')
+                    ->relationship('roles', 'name')
+                    ->preload()
+                    ->searchable()
+                    ->multiple()
+                    ->placeholder('Semua role'),
+
                 TrashedFilter::make(),
             ])
             ->recordActions([
@@ -80,7 +102,7 @@ class UsersTable
                 ]),
             ])
             ->striped()
-            ->emptyStateIcon('heroicon-o-users')
+            ->emptyStateIcon(Heroicon::OutlinedUserPlus)
             ->emptyStateHeading('Belum ada pengguna')
             ->emptyStateDescription('Mulai dengan menambahkan pengguna baru.');
 
