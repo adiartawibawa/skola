@@ -59,6 +59,21 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasMedia
         ];
     }
 
+    protected $appends = [
+        'roles_display',
+        'joined_at_display',
+    ];
+
+    public function getRolesDisplayAttribute(): string
+    {
+        return $this->getRoleNames()->implode(', ') ?: '—';
+    }
+
+    public function getJoinedAtDisplayAttribute(): string
+    {
+        return $this->created_at?->translatedFormat('d F Y') ?: '—';
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->hasRole('admin') || $this->hasRole('super-admin');

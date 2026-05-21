@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\EditProfile;
 use App\Settings\GeneralSettings;
+use App\Support\AppSettings;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -20,14 +21,13 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        $settings = $this->generalSettings();
+        // $settings = $this->generalSettings();
 
         return $panel
             ->default()
@@ -38,14 +38,14 @@ class AdminPanelProvider extends PanelProvider
             ->profile(EditProfile::class)
             ->sidebarCollapsibleOnDesktop()
             // ── Identitas dari GeneralSettings ───────────────────────────
-            ->brandName($settings?->site_name ?? config('app.name'))
-            ->brandLogo($this->resolveLogo($settings?->site_logo))
+            ->brandName(AppSettings::siteName())
+            ->brandLogo(AppSettings::logo())
             ->brandLogoHeight('2rem')
-            ->favicon($this->resolveFavicon($settings?->site_favicon))
+            ->favicon(AppSettings::favicon())
 
             // ── Warna dari GeneralSettings ────────────────────────────────
             ->colors([
-                'primary' => $this->resolveColor($settings?->primary_color ?? 'red'),
+                'primary' => AppSettings::filamentColor(),
             ])
 
             // ── Injeksi CSS vars ke <head> Filament ───────────────────────
@@ -81,79 +81,5 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
-    }
-
-    /**
-     * Ambil GeneralSettings dari container.
-     * Mengembalikan null jika tabel settings belum ada
-     * (misal: saat fresh install atau sebelum migrate).
-     */
-    private function generalSettings(): ?GeneralSettings
-    {
-        try {
-            return app(GeneralSettings::class);
-        } catch (\Exception) {
-            return null;
-        }
-    }
-
-    /**
-     * Petakan nama warna (string dari DB) ke Filament Color constant.
-     */
-    private function resolveColor(string $color): array
-    {
-        return match ($color) {
-            'slate' => Color::Slate,
-            'gray' => Color::Gray,
-            'zinc' => Color::Zinc,
-            'neutral' => Color::Neutral,
-            'stone' => Color::Stone,
-            'red' => Color::Red,
-            'orange' => Color::Orange,
-            'amber' => Color::Amber,
-            'yellow' => Color::Yellow,
-            'lime' => Color::Lime,
-            'green' => Color::Green,
-            'emerald' => Color::Emerald,
-            'teal' => Color::Teal,
-            'cyan' => Color::Cyan,
-            'sky' => Color::Sky,
-            'blue' => Color::Blue,
-            'indigo' => Color::Indigo,
-            'violet' => Color::Violet,
-            'purple' => Color::Purple,
-            'fuchsia' => Color::Fuchsia,
-            'pink' => Color::Pink,
-            'rose' => Color::Rose,
-            default => Color::Red,
-        };
-    }
-
-    /**
-     * Kembalikan URL logo publik atau null jika belum diset.
-     */
-    private function resolveLogo(?string $path): ?string
-    {
-        if (blank($path)) {
-            return null;
-        }
-
-        return Storage::disk('public')->exists($path)
-            ? Storage::disk('public')->url($path)
-            : null;
-    }
-
-    /**
-     * Kembalikan URL favicon publik atau null jika belum diset.
-     */
-    private function resolveFavicon(?string $path): ?string
-    {
-        if (blank($path)) {
-            return null;
-        }
-
-        return Storage::disk('public')->exists($path)
-            ? Storage::disk('public')->url($path)
-            : null;
     }
 }
