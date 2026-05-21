@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,12 +15,14 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements FilamentUser, HasMedia
+class User extends Authenticatable implements FilamentUser, HasAvatar, HasMedia
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasUuids, Notifiable, SoftDeletes;
 
+    use HasRoles;
     use InteractsWithMedia;
 
     /**
@@ -58,7 +61,23 @@ class User extends Authenticatable implements FilamentUser, HasMedia
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return true;
+        return $this->hasRole('admin') || $this->hasRole('super-admin');
+
+        // atau gunakan permission:
+        // return $this->can('access panel');
+    }
+
+    public function getFilamentAvatarUrl(): ?string
+    {
+        $url = $this->getFirstMediaUrl('avatars', 'preview');
+
+        return $url ?: $this->defaultAvatarUrl();
+    }
+
+    protected function defaultAvatarUrl(): string
+    {
+        // Generate default avatar dari nama user
+        return 'https://ui-avatars.com/api/?name='.urlencode($this->name).'&color=7F9CF5&background=EBF4FF';
     }
 
     /**

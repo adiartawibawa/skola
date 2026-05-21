@@ -24,8 +24,7 @@ class UsersTable
                     ->conversion('thumb')
                     ->circular()
                     ->defaultImageUrl(fn ($record) => self::generateAvatarUrl($record->name))
-                    ->width(40)
-                    ->height(40),
+                    ->width(40),
 
                 TextColumn::make('name')
                     ->label('Nama')
