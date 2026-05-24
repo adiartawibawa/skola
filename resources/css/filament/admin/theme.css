@@ -6,6 +6,9 @@
 .fi-ta-ctn {
     @apply rounded-sm;
 }
+.fi-wi-stats-overview-stat {
+    @apply rounded-sm;
+}
 .fi-section {
     @apply rounded-sm;
 }

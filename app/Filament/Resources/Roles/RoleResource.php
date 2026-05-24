@@ -25,6 +25,8 @@ class RoleResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Sistem';
 
+    protected static ?int $navigationSort = 8;
+
     public static function form(Schema $schema): Schema
     {
         return RoleForm::configure($schema);

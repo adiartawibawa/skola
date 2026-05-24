@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\EditProfile;
 use App\Support\AppSettings;
+use Filament\Actions\Action;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -17,6 +18,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -30,7 +32,15 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
+            ->passwordReset()
+            // ->emailVerification()
+            // ->emailChangeVerification()
+            ->globalSearch()
+            ->databaseNotifications()
             ->profile(EditProfile::class)
+            ->userMenuItems([
+                'profile' => fn (Action $action) => $action->label(Auth::user()->name),
+            ])
             ->sidebarCollapsibleOnDesktop()
             // ── Identitas dari GeneralSettings ───────────────────────────
             ->brandName(AppSettings::siteName())
@@ -58,10 +68,6 @@ class AdminPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
-            // ->widgets([
-            //     AccountWidget::class,
-            //     FilamentInfoWidget::class,
-            // ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

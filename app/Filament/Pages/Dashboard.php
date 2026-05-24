@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Traits\HasShieldPageAuthorization;
 use App\Filament\Widgets\LatestUsersWidget;
 use App\Filament\Widgets\StatsOverviewWidget;
 use App\Filament\Widgets\UserRegistrationChartWidget;
@@ -20,6 +21,7 @@ use Override;
 class Dashboard extends BaseDashboard
 {
     use HasFiltersForm;
+    use HasShieldPageAuthorization;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedHomeModern;
 

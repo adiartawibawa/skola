@@ -7,118 +7,58 @@ use Illuminate\Support\Str;
 /**
  * HasShieldAuthorization
  *
- * Trait ini menggantikan Filament Shield untuk memeriksa permission.
+ * Trait untuk otorisasi Filament Resource menggunakan Spatie permission.
+ * Super-admin bypass ditangani oleh Gate::before() di AppServiceProvider.
  *
- * CARA PENGGUNAAN:
- * ----------------
- * 1. Pasang trait ini di Resource Anda:
+ * PENGGUNAAN:
+ * -----------
+ * class PostResource extends Resource
+ * {
+ *     use HasShieldAuthorization;
+ *     // → cek: view_any_posts, create_posts, update_posts, ...
+ * }
  *
- *    class UserResource extends Resource
- *    {
- *        use HasShieldAuthorization;
+ * OVERRIDE NAMA RESOURCE:
+ * -----------------------
+ * Override method (bukan property) untuk menghindari konflik PHP trait:
  *
- *        // Opsional: override nama resource jika berbeda dari model
- *        // protected static ?string $permissionResource = 'users';
- *    }
+ * class PostResource extends Resource
+ * {
+ *     use HasShieldAuthorization;
  *
- * 2. Generate permission dengan artisan command:
- *    php artisan shield:generate
+ *     protected static function getPermissionResourceName(): string
+ *     {
+ *         return 'articles'; // → cek: view_any_articles, create_articles, ...
+ *     }
+ * }
  *
- * KONVENSI PENAMAAN PERMISSION:
- * -----------------------------
- * - view_any_{resource}    → bisa lihat list
- * - view_{resource}        → bisa lihat detail
- * - create_{resource}      → bisa create
- * - update_{resource}      → bisa edit
- * - delete_{resource}      → bisa delete (soft delete)
- * - force_delete_{resource}→ bisa force delete
- * - restore_{resource}     → bisa restore
- *
- * SUPER-ADMIN BYPASS:
- * -------------------
- * User dengan role 'super-admin' selalu mendapatkan akses penuh.
- * Ubah nama role di $superAdminRole jika berbeda.
+ * GENERATE PERMISSION:
+ * --------------------
+ * php artisan shield:generate-resource Post
  */
 trait HasShieldAuthorization
 {
     /**
-     * Nama role super admin yang bypass semua permission check.
-     * Override di Resource jika perlu.
-     */
-    protected static string $superAdminRole = 'super-admin';
-
-    /**
-     * Override ini di Resource jika nama permission berbeda dari nama model.
-     * Contoh: jika model = BlogPost, set 'blog_posts'
-     */
-    // protected static ?string $permissionResource = null;
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    /**
-     * Nama resource untuk permission (lowercase + snake_case dari nama model).
-     * Contoh: UserResource → 'users', BlogPostResource → 'blog_posts'
+     * Derive nama resource dari model class.
+     * BlogPost → blog_posts, User → users
+     *
+     * Override method ini jika nama permission berbeda dari nama model.
      */
     protected static function getPermissionResourceName(): string
     {
-        // Jika ada override manual, gunakan itu
-        if (isset(static::$permissionResource) && static::$permissionResource !== null) {
-            return static::$permissionResource;
-        }
-
-        // Derive dari nama model
-        $modelClass = static::getModel();
-        $modelName = class_basename($modelClass);
-
-        return Str::snake(Str::plural($modelName));
+        return Str::snake(Str::plural(class_basename(static::getModel())));
     }
 
-    /**
-     * Cek apakah user adalah super-admin (bypass semua permission).
-     */
-    protected static function isSuperAdmin(): bool
-    {
-        $user = auth()->user();
-
-        if (! $user || ! method_exists($user, 'hasRole')) {
-            return false;
-        }
-
-        return $user->hasRole(static::$superAdminRole);
-    }
-
-    /**
-     * Cek satu permission, dengan super-admin bypass.
-     */
-    protected static function checkPermission(string $ability): bool
-    {
-        if (static::isSuperAdmin()) {
-            return true;
-        }
-
-        $user = auth()->user();
-
-        if (! $user) {
-            return false;
-        }
-
-        $permission = "{$ability}_".static::getPermissionResourceName();
-
-        return $user->can($permission);
-    }
-
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Filament Authorization Methods
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
     public static function canViewAny(): bool
     {
         return static::checkPermission('view_any');
     }
 
-    public static function canView($record): bool
+    public static function canView(mixed $record): bool
     {
         return static::checkPermission('view');
     }
@@ -128,12 +68,12 @@ trait HasShieldAuthorization
         return static::checkPermission('create');
     }
 
-    public static function canEdit($record): bool
+    public static function canEdit(mixed $record): bool
     {
         return static::checkPermission('update');
     }
 
-    public static function canDelete($record): bool
+    public static function canDelete(mixed $record): bool
     {
         return static::checkPermission('delete');
     }
@@ -143,7 +83,7 @@ trait HasShieldAuthorization
         return static::checkPermission('delete');
     }
 
-    public static function canForceDelete($record): bool
+    public static function canForceDelete(mixed $record): bool
     {
         return static::checkPermission('force_delete');
     }
@@ -153,7 +93,7 @@ trait HasShieldAuthorization
         return static::checkPermission('force_delete');
     }
 
-    public static function canRestore($record): bool
+    public static function canRestore(mixed $record): bool
     {
         return static::checkPermission('restore');
     }
@@ -161,5 +101,16 @@ trait HasShieldAuthorization
     public static function canRestoreAny(): bool
     {
         return static::checkPermission('restore');
+    }
+
+    // =========================================================================
+    // Internal
+    // =========================================================================
+
+    protected static function checkPermission(string $ability): bool
+    {
+        return auth()->user()?->can(
+            "{$ability}_".static::getPermissionResourceName()
+        ) ?? false;
     }
 }
